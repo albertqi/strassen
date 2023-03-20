@@ -5,14 +5,14 @@
 
 #define N0 15
 
-int zero = 0;
-std::unordered_set<int *> pointers;
+long zero = 0;
+std::unordered_set<long *> pointers;
 
 class Matrix
 {
 private:
     const int original_dim, dim, row_start, col_start;
-    int *arr;
+    long *arr;
 
     const Matrix quarter(const int &q) const
     {
@@ -31,7 +31,7 @@ private:
         }
 
         const int dim = X.dim;
-        const Matrix Z(dim, dim, 0, 0, new int[dim * dim]);
+        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
 
         for (int i = 0; i < dim; ++i)
         {
@@ -54,7 +54,7 @@ private:
         return shift(X, Y, -1);
     }
 
-    int &operator()(const int &row, const int &col) const
+    long &operator()(const int &row, const int &col) const
     {
         if (row_start + row >= original_dim || col_start + col >= original_dim)
         {
@@ -65,7 +65,7 @@ private:
     }
 
 public:
-    Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, int *arr)
+    Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, long *arr)
         : original_dim(original_dim), dim(dim), row_start(row_start), col_start(col_start), arr(arr)
     {
         pointers.insert(arr);
@@ -75,7 +75,7 @@ public:
     {
         for (int i = 0; i < dim; ++i)
         {
-            printf("%d\n", (*this)(i, i));
+            printf("%ld\n", (*this)(i, i));
         }
     }
 
@@ -88,7 +88,7 @@ public:
         }
 
         const int dim = X.dim;
-        const Matrix Z(dim, dim, 0, 0, new int[dim * dim]);
+        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
 
         for (int i = 0; i < dim; ++i)
         {
@@ -141,7 +141,7 @@ public:
                      Q3 = add(P3, P4),
                      Q4 = add(P1, add(P5, subtract(P7, P3)));
 
-        const Matrix Z(dim, dim, 0, 0, new int[dim * dim]);
+        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
         const bool should_trim = Q1.dim * 2 != dim;
 
         for (int i = 0; i < (dim + 1) / 2; ++i)
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     std::ifstream file(input_file);
 
     // Parse input file
-    int *a = new int[dim * dim], *b = new int[dim * dim];
+    long *a = new long[dim * dim], *b = new long[dim * dim];
     for (int i = 0; i < dim * dim; ++i)
     {
         file >> a[i];
