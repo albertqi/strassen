@@ -14,6 +14,12 @@ private:
     const int original_dim, dim, row_start, col_start;
     long *arr;
 
+    Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, long *arr)
+        : original_dim(original_dim), dim(dim), row_start(row_start), col_start(col_start), arr(arr)
+    {
+        pointers.insert(arr);
+    }
+
     const Matrix quarter(const int &q) const
     {
         const int new_dim = (dim + 1) / 2;
@@ -67,12 +73,6 @@ private:
 public:
     Matrix(const int &dim, long *arr)
         : original_dim(dim), dim(dim), row_start(0), col_start(0), arr(arr)
-    {
-        pointers.insert(arr);
-    }
-
-    Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, long *arr)
-        : original_dim(original_dim), dim(dim), row_start(row_start), col_start(col_start), arr(arr)
     {
         pointers.insert(arr);
     }
