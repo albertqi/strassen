@@ -30,8 +30,8 @@ private:
             throw std::invalid_argument("Mismatched dimensions");
         }
 
-        const int original_dim = X.original_dim, dim = X.dim;
-        const Matrix Z(original_dim, dim, 0, 0, new int[original_dim * original_dim]());
+        const int dim = X.dim;
+        const Matrix Z(dim, dim, 0, 0, new int[dim * dim]);
 
         for (int i = 0; i < dim; ++i)
         {
@@ -82,7 +82,7 @@ public:
     static const Matrix multiply_conventional(const Matrix &X, const Matrix &Y)
     {
         // Handle mismatched dimensions
-        if (X.original_dim != Y.original_dim || X.dim != Y.dim)
+        if (X.dim != Y.dim)
         {
             throw std::invalid_argument("Mismatched dimensions");
         }
@@ -107,12 +107,12 @@ public:
     static const Matrix multiply_strassen(const Matrix &X, const Matrix &Y)
     {
         // Handle mismatched dimensions
-        if (X.original_dim != Y.original_dim || X.dim != Y.dim)
+        if (X.dim != Y.dim)
         {
             throw std::invalid_argument("Mismatched dimensions");
         }
 
-        const int original_dim = X.original_dim, dim = X.dim;
+        const int dim = X.dim;
 
         if (dim <= N0)
         {
