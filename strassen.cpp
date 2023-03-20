@@ -31,7 +31,7 @@ private:
         }
 
         const int dim = X.dim;
-        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
+        const Matrix Z(dim, new long[dim * dim]);
 
         for (int i = 0; i < dim; ++i)
         {
@@ -65,6 +65,12 @@ private:
     }
 
 public:
+    Matrix(const int &dim, long *arr)
+        : original_dim(dim), dim(dim), row_start(0), col_start(0), arr(arr)
+    {
+        pointers.insert(arr);
+    }
+
     Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, long *arr)
         : original_dim(original_dim), dim(dim), row_start(row_start), col_start(col_start), arr(arr)
     {
@@ -88,7 +94,7 @@ public:
         }
 
         const int dim = X.dim;
-        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
+        const Matrix Z(dim, new long[dim * dim]);
 
         for (int i = 0; i < dim; ++i)
         {
@@ -141,7 +147,7 @@ public:
                      Q3 = add(P3, P4),
                      Q4 = add(P1, add(P5, subtract(P7, P3)));
 
-        const Matrix Z(dim, dim, 0, 0, new long[dim * dim]);
+        const Matrix Z(dim, new long[dim * dim]);
         const bool should_trim = Q1.dim * 2 != dim;
 
         for (int i = 0; i < (dim + 1) / 2; ++i)
@@ -196,7 +202,7 @@ int main(int argc, char *argv[])
     }
 
     // Create matrices `A` and `B`
-    const Matrix A(dim, dim, 0, 0, a), B(dim, dim, 0, 0, b);
+    const Matrix A(dim, a), B(dim, b);
 
     // Calculate product `C`
     const Matrix C = Matrix::multiply_strassen(A, B);
