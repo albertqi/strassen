@@ -2,11 +2,14 @@
 #include <unordered_set>
 #include <string>
 #include <fstream>
+#include <random>
+#include <chrono>
 
-#define N0 15
+#define N0 68
 
 long zero = 0;
 std::unordered_set<long *> pointers;
+std::mt19937 generator;
 
 class Matrix
 {
@@ -83,6 +86,16 @@ public:
         {
             printf("%ld\n", (*this)(i, i));
         }
+    }
+
+    const long sum_diagonal() const
+    {
+        long x = 0;
+        for (int i = 0; i < dim; ++i)
+        {
+            x += (*this)(i, i);
+        }
+        return x;
     }
 
     static const Matrix multiply_conventional(const Matrix &X, const Matrix &Y)
@@ -184,8 +197,47 @@ int main(int argc, char *argv[])
     }
 
     // Parse command line arguments
-    const int flag = atoi(argv[1]), dim = atoi(argv[2]);
+    const double flag = atof(argv[1]);
+    const int dim = atoi(argv[2]);
     const std::string input_file = argv[3];
+
+    // Count triangles in random graph
+    if (flag > 0 && flag < 1)
+    {
+        // Set up random generator
+        std::random_device random_dev;
+        generator.seed(random_dev());
+        std::uniform_real_distribution<double> unif(0.0, 1.0);
+
+        long *x = new long[1024 * 1024];
+        for (int i = 0; i < 1024; ++i)
+        {
+            for (int j = 0; j < i; ++j)
+            {
+                const bool include_edge = unif(generator) <= flag;
+
+                x[i * 1024 + j] = include_edge;
+                x[j * 1024 + i] = include_edge;
+            }
+        }
+
+        // Create matrix `X`
+        const Matrix X(1024, x);
+
+        // Calculate product `Y`
+        const Matrix Y = Matrix::multiply_strassen(X, Matrix::multiply_strassen(X, X));
+
+        // Print results
+        printf("%ld\n", Y.sum_diagonal() / 6);
+
+        // Free dynamically allocated memory
+        for (const auto &p : pointers)
+        {
+            delete[] p;
+        }
+
+        return 0;
+    }
 
     // Open input file
     std::ifstream file(input_file);
@@ -203,6 +255,36 @@ int main(int argc, char *argv[])
 
     // Create matrices `A` and `B`
     const Matrix A(dim, a), B(dim, b);
+
+    // Find runtimes for `multiply_conventional` and `multiply_strassen`
+    if (flag == 1)
+    {
+        // Calculate product `C`
+        auto start = std::chrono::high_resolution_clock::now();
+        const Matrix C = Matrix::multiply_conventional(A, B);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        const double conventional_time = diff.count();
+
+        // Calculate product `D`
+        start = std::chrono::high_resolution_clock::now();
+        const Matrix D = Matrix::multiply_strassen(A, B);
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        const double strassen_time = diff.count();
+
+        // Print results
+        printf("%f seconds for conventional\n", conventional_time);
+        printf("%f seconds for Strassen\n", strassen_time);
+
+        // Free dynamically allocated memory
+        for (const auto &p : pointers)
+        {
+            delete[] p;
+        }
+
+        return 0;
+    }
 
     // Calculate product `C`
     const Matrix C = Matrix::multiply_strassen(A, B);
