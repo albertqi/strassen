@@ -4,12 +4,15 @@
 #include <fstream>
 #include <random>
 #include <chrono>
+#include <thread>
 
 #define N0 68
+#define NUM_THREADS 10
 
 long zero = 0;
+thread_local std::mt19937 generator;
+std::mutex m;
 std::unordered_set<long *> pointers;
-std::mt19937 generator;
 
 class Matrix
 {
@@ -20,7 +23,9 @@ private:
     Matrix(const int &original_dim, const int &dim, const int &row_start, const int &col_start, long *arr)
         : original_dim(original_dim), dim(dim), row_start(row_start), col_start(col_start), arr(arr)
     {
+        m.lock();
         pointers.insert(arr);
+        m.unlock();
     }
 
     const Matrix quarter(const int &q) const
@@ -77,7 +82,9 @@ public:
     Matrix(const int &dim, long *arr)
         : original_dim(dim), dim(dim), row_start(0), col_start(0), arr(arr)
     {
+        m.lock();
         pointers.insert(arr);
+        m.unlock();
     }
 
     void print_diagonal() const
@@ -123,7 +130,9 @@ public:
         return Z;
     }
 
-    static const Matrix multiply_strassen(const Matrix &X, const Matrix &Y)
+    static const Matrix multiply_strassen_threshold(const Matrix &X,
+                                                    const Matrix &Y,
+                                                    const int &threshold)
     {
         // Handle mismatched dimensions
         if (X.dim != Y.dim)
@@ -133,7 +142,7 @@ public:
 
         const int dim = X.dim;
 
-        if (dim <= N0)
+        if (dim <= threshold)
         {
             return multiply_conventional(X, Y);
         }
@@ -185,6 +194,11 @@ public:
 
         return Z;
     }
+
+    static const Matrix multiply_strassen(const Matrix &X, const Matrix &Y)
+    {
+        return multiply_strassen_threshold(X, Y, N0);
+    }
 };
 
 int main(int argc, char *argv[])
@@ -204,31 +218,48 @@ int main(int argc, char *argv[])
     // Count triangles in random graph
     if (flag > 0 && flag < 1)
     {
-        // Set up random generator
-        std::random_device random_dev;
-        generator.seed(random_dev());
-        std::uniform_real_distribution<double> unif(0.0, 1.0);
+        long total_triangles = 0;
 
-        long *x = new long[1024 * 1024];
-        for (int i = 0; i < 1024; ++i)
+        std::vector<std::thread> threads;
+        for (int i = 0; i < NUM_THREADS; ++i)
         {
-            for (int j = 0; j < i; ++j)
+            threads.push_back(std::thread([&flag, &total_triangles]()
             {
-                const bool include_edge = unif(generator) <= flag;
+                // Set up random generator
+                std::random_device random_dev;
+                generator.seed(random_dev());
+                std::uniform_real_distribution<double> unif(0.0, 1.0);
 
-                x[i * 1024 + j] = include_edge;
-                x[j * 1024 + i] = include_edge;
-            }
+                long *x = new long[1024 * 1024];
+                for (int i = 0; i < 1024; ++i)
+                {
+                    for (int j = 0; j < i; ++j)
+                    {
+                        const bool include_edge = unif(generator) <= flag;
+
+                        x[i * 1024 + j] = include_edge;
+                        x[j * 1024 + i] = include_edge;
+                    }
+                }
+
+                // Create matrix `X`
+                const Matrix X(1024, x);
+
+                // Calculate product `Y`
+                const Matrix Y = Matrix::multiply_strassen(X, Matrix::multiply_strassen(X, X));
+
+                m.lock();
+                total_triangles += Y.sum_diagonal() / 6;
+                m.unlock();
+            }));
+        }
+        for (std::thread &t : threads)
+        {
+            t.join();
         }
 
-        // Create matrix `X`
-        const Matrix X(1024, x);
-
-        // Calculate product `Y`
-        const Matrix Y = Matrix::multiply_strassen(X, Matrix::multiply_strassen(X, X));
-
         // Print results
-        printf("%ld\n", Y.sum_diagonal() / 6);
+        printf("%f\n", (double)total_triangles / NUM_THREADS);
 
         // Free dynamically allocated memory
         for (const auto &p : pointers)
@@ -256,26 +287,63 @@ int main(int argc, char *argv[])
     // Create matrices `A` and `B`
     const Matrix A(dim, a), B(dim, b);
 
-    // Find runtimes for `multiply_conventional` and `multiply_strassen`
+    // Find best threshold for `multiply_strassen_threshold`
     if (flag == 1)
     {
-        // Calculate product `C`
-        auto start = std::chrono::high_resolution_clock::now();
-        const Matrix C = Matrix::multiply_conventional(A, B);
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> diff = end - start;
-        const double conventional_time = diff.count();
+        // Keep track of `min_time` and `best_threshold`
+        double min_time = INT_MAX;
+        int best_threshold;
 
-        // Calculate product `D`
-        start = std::chrono::high_resolution_clock::now();
-        const Matrix D = Matrix::multiply_strassen(A, B);
-        end = std::chrono::high_resolution_clock::now();
-        diff = end - start;
-        const double strassen_time = diff.count();
+        // Calculate product `C` for various values of `threshold`
+        for (int threshold = 1; threshold <= 100; ++threshold)
+        {
+            double total_runtime = 0;
 
-        // Print results
-        printf("%f seconds for conventional\n", conventional_time);
-        printf("%f seconds for Strassen\n", strassen_time);
+            std::vector<std::thread> threads;
+            for (int i = 0; i < NUM_THREADS; ++i)
+            {
+                threads.push_back(std::thread([&A, &B, &threshold, &total_runtime]()
+                {
+                    const auto start = std::chrono::high_resolution_clock::now();
+                    const Matrix C = Matrix::multiply_strassen_threshold(A, B, threshold);
+                    const auto end = std::chrono::high_resolution_clock::now();
+                    const std::chrono::duration<double> diff = end - start;
+                    
+                    m.lock();
+                    total_runtime += diff.count();
+                    m.unlock();
+                }));
+            }
+            for (std::thread &t : threads)
+            {
+                t.join();
+            }
+
+            const double runtime = total_runtime / NUM_THREADS;
+
+            // Print results
+            printf("%f seconds with threshold of %d\n", runtime, threshold);
+
+            // Update `min_time` and `best_threshold`
+            if (runtime < min_time)
+            {
+                min_time = runtime;
+                best_threshold = threshold;
+            }
+
+            // Free dynamically allocated memory
+            for (const auto &p : pointers)
+            {
+                if (p != a && p != b)
+                {
+                    delete[] p;
+                }
+            }
+            pointers = std::unordered_set<long *>({a, b});
+        }
+
+        // Print `best_threshold`
+        printf("%d\n", best_threshold);
 
         // Free dynamically allocated memory
         for (const auto &p : pointers)
