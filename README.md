@@ -15,7 +15,32 @@
 
 ## 2. Analytical Cross-Over Point
 
+There are $n^2$ entries, and for each entry, there are $n$ multiplications and $n-1$ additions.
 
+$$\begin{aligned}
+T_C(n)&=n^2(n+(n-1))\\
+&=n^2(2n-1)
+\end{aligned}$$
+
+There are $7$ subproblems of size $n/2$, and there are $18$ additions and subtractions on $n/2\times n/2$ matrices.
+
+$$\begin{aligned}
+T_S(n)&=7\cdot T_S\left(\frac{n}{2}\right)+18\left(\frac{n}{2}\right)^2\\
+&=7\cdot T_S\left(\frac{n}{2}\right)+\frac{9n^2}{2}
+\end{aligned}$$
+
+For even $n$, we know that:
+
+$$\begin{gathered}
+T_C(n)=7\cdot T_C\left(\frac{n}{2}\right)+\frac{9n^2}{2}\\
+n^2(2n-1)=7\left(\frac{n}{2}\right)^2\left(2\left(\frac{n}{2}\right)-1\right)+\frac{9n^2}{2}\\
+n^2(2n-1)=\frac{7n^2(n-1)}{4}+\frac{9n^2}{2}\\
+4n^2(2n-1)=7n^2(n-1)+18n^2\\
+n^3-15n^2=0\\
+n=0,15
+\end{gathered}$$
+
+Thus, for even dimensions, we have that $n_0=15$.
 
 ## 3. Experimental Cross-Over Point
 
@@ -37,7 +62,7 @@ We can then graph these results to better visualize how the experimental number 
 
 ![Experimental and expected number of triangles vs. p](./assets/triangles.png)
 
-As we can see by the graph, the experimental number of triangles aligns very closely with the expected number of triangles. Indeed, the experimental number only differs from the expected number of triangles by at most $1.46\%$ (with $p=0.01$).
+As we can see by the graph, the experimental number of triangles aligns very closely with the expected number of triangles. Indeed, the experimental number only differs from the expected number of triangles by at most $1.46$ percent (with $p=0.01$).
 
 ## 5. Discussion of Experiments
 
