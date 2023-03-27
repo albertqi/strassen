@@ -25,7 +25,7 @@ private:
 
     /**
      * Constructs a new `Matrix` object.
-     * 
+     *
      * @param original_dim Original dimension when first created.
      * @param dim Current dimension of matrix.
      * @param row_start Starting row of matrix.
@@ -42,9 +42,9 @@ private:
 
     /**
      * Finds the `q`-th quarter.
-     * 
+     *
      * @param q Which quarter should be returned.
-     * @return Quarter `q` of matrix. 
+     * @return Quarter `q` of matrix.
      */
     const Matrix quarter(const int &q) const
     {
@@ -56,7 +56,7 @@ private:
 
     /**
      * Shifts matrix `X` by `delta` * `Y`.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @param delta Shift constant.
@@ -64,15 +64,17 @@ private:
      */
     static const Matrix shift(const Matrix &X, const Matrix &Y, const int &delta)
     {
-        // Handle mismatched dimensions
+        // Handle mismatched dimensions.
         if (X.original_dim != Y.original_dim || X.dim != Y.dim)
         {
             throw std::invalid_argument("Mismatched dimensions");
         }
 
+        // Create new matrix `Z`.
         const int dim = X.dim;
         const Matrix Z(dim, new long[dim * dim]);
 
+        // Update entries of `Z`.
         for (int i = 0; i < dim; ++i)
         {
             for (int j = 0; j < dim; ++j)
@@ -86,7 +88,7 @@ private:
 
     /**
      * Adds matrices `X` and `Y`.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @return Sum `X` + `Y`.
@@ -98,7 +100,7 @@ private:
 
     /**
      * Subtracts matrices `X` and `Y`.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @return Difference `X` - `Y`.
@@ -111,7 +113,7 @@ private:
     /**
      * Indexes into current matrix at position `row` and `col`,
      * or `zero` if position is invalid.
-     * 
+     *
      * @param row Row number.
      * @param col Column number.
      * @return Reference to position `row` and `col` in matrix.
@@ -129,7 +131,7 @@ private:
 public:
     /**
      * Constructs a new `Matrix` object.
-     * 
+     *
      * @param dim Current dimension of matrix.
      * @param arr Pointer to array.
      */
@@ -143,22 +145,24 @@ public:
 
     /**
      * Conventional matrix multiplication.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @return Product `X` * `Y`.
      */
     static const Matrix multiply_conventional(const Matrix &X, const Matrix &Y)
     {
-        // Handle mismatched dimensions
+        // Handle mismatched dimensions.
         if (X.dim != Y.dim)
         {
             throw std::invalid_argument("Mismatched dimensions");
         }
 
+        // Create new matrix `Z`.
         const int dim = X.dim;
         const Matrix Z(dim, new long[dim * dim]);
 
+        // Update entries of `Z`.
         for (int i = 0; i < dim; ++i)
         {
             for (int j = 0; j < dim; ++j)
@@ -175,7 +179,7 @@ public:
 
     /**
      * Strassen multiplication with an input `threshold`.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @param threshold Dimension at which we switch to conventional multiplication.
@@ -185,19 +189,22 @@ public:
                                                     const Matrix &Y,
                                                     const int &threshold)
     {
-        // Handle mismatched dimensions
+        // Handle mismatched dimensions.
         if (X.dim != Y.dim)
         {
             throw std::invalid_argument("Mismatched dimensions");
         }
 
+        // Store dimension `dim`.
         const int dim = X.dim;
 
+        // Use conventional multiplication if `dim <= threshold`.
         if (dim <= threshold)
         {
             return multiply_conventional(X, Y);
         }
 
+        // Partition `X` and `Y` into quarters.
         const Matrix A = X.quarter(0),
                      B = X.quarter(1),
                      C = X.quarter(2),
@@ -207,6 +214,7 @@ public:
                      G = Y.quarter(2),
                      H = Y.quarter(3);
 
+        // Calculate products `P1` through `P7`.
         const Matrix P1 = multiply_strassen(A, subtract(F, H)),
                      P2 = multiply_strassen(add(A, B), H),
                      P3 = multiply_strassen(add(C, D), E),
@@ -215,14 +223,17 @@ public:
                      P6 = multiply_strassen(subtract(B, D), add(G, H)),
                      P7 = multiply_strassen(subtract(C, A), add(E, F));
 
+        // Calculate new quarters for product.
         const Matrix Q1 = add(P4, add(P5, subtract(P6, P2))),
                      Q2 = add(P1, P2),
                      Q3 = add(P3, P4),
                      Q4 = add(P1, add(P5, subtract(P7, P3)));
 
+        // Create new matrix `Z`.
         const Matrix Z(dim, new long[dim * dim]);
         const bool should_trim = Q1.dim * 2 != dim;
 
+        // Update entries of `Z`.
         for (int i = 0; i < (dim + 1) / 2; ++i)
         {
             for (int j = 0; j < (dim + 1) / 2; ++j)
@@ -248,7 +259,7 @@ public:
 
     /**
      * Strassen multiplication with threshold `N0`.
-     * 
+     *
      * @param X First matrix.
      * @param Y Second matrix.
      * @return Product `X` * `Y`.
@@ -271,7 +282,7 @@ public:
 
     /**
      * Finds sum of diagonal entries (i.e., the trace).
-     * 
+     *
      * @return Sum of diagonal entries.
      */
     const long sum_diagonal() const
@@ -287,7 +298,7 @@ public:
 
 /**
  * Finds best threshold for Strassen multiplication.
- * 
+ *
  * @param A First matrix.
  * @param B Second matrix.
  * @param a Pointer to array of `A`.
@@ -295,13 +306,14 @@ public:
  */
 void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
 {
-    // Keep track of `min_time` and `best_threshold`
+    // Keep track of `min_time` and `best_threshold`.
     double min_time = INT_MAX;
     int best_threshold;
 
-    // Calculate product `C` for various values of `threshold`
+    // Calculate product `C` for various values of `threshold`.
     for (int threshold = 1; threshold <= 1000; threshold += 10)
     {
+        // Initialize `total_runtime`.
         double total_runtime = 0;
 
         std::vector<std::thread> threads;
@@ -309,11 +321,13 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
         {
             threads.push_back(std::thread([&A, &B, &threshold, &total_runtime]()
             {
+                // Time `multiply_strassen_threshold`.
                 const auto start = std::chrono::high_resolution_clock::now();
                 const Matrix C = Matrix::multiply_strassen_threshold(A, B, threshold);
                 const auto end = std::chrono::high_resolution_clock::now();
                 const std::chrono::duration<double> diff = end - start;
 
+                // Update `total_runtime`.
                 m.lock();
                 total_runtime += diff.count();
                 m.unlock();
@@ -324,19 +338,20 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
             t.join();
         }
 
+        // Calculate average runtime.
         const double runtime = total_runtime / NUM_THREADS;
 
-        // Print results
+        // Print results.
         printf("%f seconds with threshold of %d\n", runtime, threshold);
 
-        // Update `min_time` and `best_threshold`
+        // Update `min_time` and `best_threshold`.
         if (runtime < min_time)
         {
             min_time = runtime;
             best_threshold = threshold;
         }
 
-        // Free dynamically allocated memory
+        // Free dynamically allocated memory.
         for (const auto &p : pointers)
         {
             if (p != a && p != b)
@@ -344,13 +359,14 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
                 delete[] p;
             }
         }
+
         pointers = std::unordered_set<long *>({a, b});
     }
 
-    // Print `best_threshold`
+    // Print `best_threshold`.
     printf("%d\n", best_threshold);
 
-    // Free dynamically allocated memory
+    // Free dynamically allocated memory.
     for (const auto &p : pointers)
     {
         delete[] p;
@@ -359,11 +375,12 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
 
 /**
  * Counts number of triangles in a random graph.
- * 
+ *
  * @param flag Probability of including an edge.
  */
 void count_triangles(const double &flag)
 {
+    // Initialize `total_triangles`.
     long total_triangles = 0;
 
     std::vector<std::thread> threads;
@@ -371,29 +388,31 @@ void count_triangles(const double &flag)
     {
         threads.push_back(std::thread([&flag, &total_triangles]()
         {
-            // Set up random generator
+            // Set up random generator.
             std::random_device random_dev;
             generator.seed(random_dev());
             std::uniform_real_distribution<double> unif(0.0, 1.0);
 
+            // Initialize adjacency matrix.
             long *x = new long[1024 * 1024];
             for (int i = 0; i < 1024; ++i)
             {
                 for (int j = 0; j < i; ++j)
                 {
+                    // Add edge with probability `flag`.
                     const bool include_edge = unif(generator) <= flag;
-
                     x[i * 1024 + j] = include_edge;
                     x[j * 1024 + i] = include_edge;
                 }
             }
 
-            // Create matrix `X`
+            // Create matrix `X`.
             const Matrix X(1024, x);
 
-            // Calculate product `Y`
+            // Calculate product `Y`.
             const Matrix Y = Matrix::multiply_strassen(X, Matrix::multiply_strassen(X, X));
 
+            // Update `total_triangles`.
             m.lock();
             total_triangles += Y.sum_diagonal() / 6;
             m.unlock();
@@ -404,10 +423,10 @@ void count_triangles(const double &flag)
         t.join();
     }
 
-    // Print results
+    // Print results.
     printf("%f\n", (double)total_triangles / NUM_THREADS);
 
-    // Free dynamically allocated memory
+    // Free dynamically allocated memory.
     for (const auto &p : pointers)
     {
         delete[] p;
@@ -416,29 +435,29 @@ void count_triangles(const double &flag)
 
 int main(int argc, char *argv[])
 {
-    // Check for valid command line arguments
+    // Check for valid command line arguments.
     if (argc != 4)
     {
         printf("Usage: ./strassen [flag] [dimension] [input_file]\n");
         return 1;
     }
 
-    // Parse command line arguments
+    // Parse command line arguments.
     const double flag = atof(argv[1]);
     const int dim = atoi(argv[2]);
     const std::string input_file = argv[3];
 
-    // Count triangles in random graph
+    // Count triangles in random graph.
     if (flag > 0 && flag < 1)
     {
         count_triangles(flag);
         return 0;
     }
 
-    // Open input file
+    // Open input file.
     std::ifstream file(input_file);
 
-    // Parse input file
+    // Parse input file.
     long *a = new long[dim * dim], *b = new long[dim * dim];
     for (int i = 0; i < dim * dim; ++i)
     {
@@ -449,23 +468,23 @@ int main(int argc, char *argv[])
         file >> b[i];
     }
 
-    // Create matrices `A` and `B`
+    // Create matrices `A` and `B`.
     const Matrix A(dim, a), B(dim, b);
 
-    // Find best threshold for `multiply_strassen_threshold`
+    // Find best threshold for Strassen multiplication.
     if (flag == 1)
     {
         find_best_threshold(A, B, a, b);
         return 0;
     }
 
-    // Calculate product `C`
+    // Calculate product `C`.
     const Matrix C = Matrix::multiply_strassen(A, B);
 
-    // Print results
+    // Print results.
     C.print_diagonal();
 
-    // Free dynamically allocated memory
+    // Free dynamically allocated memory.
     for (const auto &p : pointers)
     {
         delete[] p;
