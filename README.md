@@ -11,7 +11,7 @@
 
 ## 1. Introduction
 
-
+In this write-up, we determine the optimal cross-over point from Strassen multiplication to conventional multiplication. We will first find the analytical cross-over point and then compare that to our experimental cross-over point. Using this, we can also estimate the number of triangles in a random graph for various probabilities of including an edge. Finally, we will discuss our experiments in more depth, covering the optimizations of our algorithm and other intruiging details we discovered along the way.
 
 ## 2. Analytical Cross-Over Point
 
