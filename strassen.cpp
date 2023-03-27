@@ -7,7 +7,7 @@
 #include <thread>
 
 #define N0 68
-#define NUM_THREADS 10
+#define NUM_TRIALS 10
 
 long zero = 0;
 thread_local std::mt19937 generator;
@@ -215,13 +215,13 @@ public:
                      H = Y.quarter(3);
 
         // Calculate products `P1` through `P7`.
-        const Matrix P1 = multiply_strassen(A, subtract(F, H)),
-                     P2 = multiply_strassen(add(A, B), H),
-                     P3 = multiply_strassen(add(C, D), E),
-                     P4 = multiply_strassen(D, subtract(G, E)),
-                     P5 = multiply_strassen(add(A, D), add(E, H)),
-                     P6 = multiply_strassen(subtract(B, D), add(G, H)),
-                     P7 = multiply_strassen(subtract(C, A), add(E, F));
+        const Matrix P1 = multiply_strassen_threshold(A, subtract(F, H), threshold),
+                     P2 = multiply_strassen_threshold(add(A, B), H, threshold),
+                     P3 = multiply_strassen_threshold(add(C, D), E, threshold),
+                     P4 = multiply_strassen_threshold(D, subtract(G, E), threshold),
+                     P5 = multiply_strassen_threshold(add(A, D), add(E, H), threshold),
+                     P6 = multiply_strassen_threshold(subtract(B, D), add(G, H), threshold),
+                     P7 = multiply_strassen_threshold(subtract(C, A), add(E, F), threshold);
 
         // Calculate new quarters for product.
         const Matrix Q1 = add(P4, add(P5, subtract(P6, P2))),
@@ -311,35 +311,36 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
     int best_threshold;
 
     // Calculate product `C` for various values of `threshold`.
-    for (int threshold = 1; threshold <= 1000; threshold += 10)
+    for (int threshold = 10; threshold <= 1000; threshold += 10)
     {
         // Initialize `total_runtime`.
         double total_runtime = 0;
 
-        std::vector<std::thread> threads;
-        for (int i = 0; i < NUM_THREADS; ++i)
+        for (int i = 0; i < NUM_TRIALS; ++i)
         {
-            threads.push_back(std::thread([&A, &B, &threshold, &total_runtime]()
-            {
-                // Time `multiply_strassen_threshold`.
-                const auto start = std::chrono::high_resolution_clock::now();
-                const Matrix C = Matrix::multiply_strassen_threshold(A, B, threshold);
-                const auto end = std::chrono::high_resolution_clock::now();
-                const std::chrono::duration<double> diff = end - start;
+            // Time `multiply_strassen_threshold`.
+            const auto start = std::chrono::high_resolution_clock::now();
+            const Matrix C = Matrix::multiply_strassen_threshold(A, B, threshold);
+            const auto end = std::chrono::high_resolution_clock::now();
+            const std::chrono::duration<double> diff = end - start;
 
-                // Update `total_runtime`.
-                m.lock();
-                total_runtime += diff.count();
-                m.unlock();
-            }));
-        }
-        for (std::thread &t : threads)
-        {
-            t.join();
+            // Update `total_runtime`.
+            total_runtime += diff.count();
+
+            // Free dynamically allocated memory.
+            for (const auto &p : pointers)
+            {
+                if (p != a && p != b)
+                {
+                    delete[] p;
+                }
+            }
+
+            pointers = std::unordered_set<long *>({a, b});
         }
 
         // Calculate average runtime.
-        const double runtime = total_runtime / NUM_THREADS;
+        const double runtime = total_runtime / NUM_TRIALS;
 
         // Print results.
         printf("%f seconds with threshold of %d\n", runtime, threshold);
@@ -350,17 +351,6 @@ void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
             min_time = runtime;
             best_threshold = threshold;
         }
-
-        // Free dynamically allocated memory.
-        for (const auto &p : pointers)
-        {
-            if (p != a && p != b)
-            {
-                delete[] p;
-            }
-        }
-
-        pointers = std::unordered_set<long *>({a, b});
     }
 
     // Print `best_threshold`.
@@ -384,7 +374,7 @@ void count_triangles(const double &flag)
     long total_triangles = 0;
 
     std::vector<std::thread> threads;
-    for (int i = 0; i < NUM_THREADS; ++i)
+    for (int i = 0; i < NUM_TRIALS; ++i)
     {
         threads.push_back(std::thread([&flag, &total_triangles]()
         {
@@ -424,7 +414,7 @@ void count_triangles(const double &flag)
     }
 
     // Print results.
-    printf("%f\n", (double)total_triangles / NUM_THREADS);
+    printf("%f\n", (double)total_triangles / NUM_TRIALS);
 
     // Free dynamically allocated memory.
     for (const auto &p : pointers)
