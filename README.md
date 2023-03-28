@@ -15,21 +15,23 @@ In this write-up, we determine the optimal cross-over point from Strassen multip
 
 ## 2. Analytical Cross-Over Point
 
-There are $n^2$ entries, and for each entry, there are $n$ multiplications and $n-1$ additions.
+Before experimentally finding the cross-over point, it is helpful to first determine the cross-over point analytically. That is, we can mathematically calculate the value of $n_0$ that optimizes the runtime of Strassen's algorithm. We will begin by calculating the runtimes for both the conventional matrix multiplication algorithm and Strassen's multiplication algorithm.
+
+Let $T_C(n)$ be the runtime of the conventional algorithm on an $n\times n$ matrix. When performing conventional multiplication on an $n\times n$ matrix, we need to update $n^2$ entries. Then, for each entry, there are $n$ multiplications and $n-1$ additions, meaning:
 
 $$\begin{aligned}
 T_C(n)&=n^2(n+(n-1))\\
 &=n^2(2n-1)
 \end{aligned}$$
 
-There are $7$ subproblems of size $n/2$, and there are $18$ additions and subtractions on $n/2\times n/2$ matrices.
+Now, let $T_S(n)$ be the runtime of Strassen's algorithm on an $n\times n$ matrix. When performing Strassen multiplication on an $n\times n$ matrix, we need to solve $7$ subproblems, each of size $n/2$. Additionally, there are $18$ total additions and subtractions, each on $n/2\times n/2$ matrices. This means that:
 
 $$\begin{aligned}
 T_S(n)&=7\cdot T_S\left(\frac{n}{2}\right)+18\left(\frac{n}{2}\right)^2\\
 &=7\cdot T_S\left(\frac{n}{2}\right)+\frac{9n^2}{2}
 \end{aligned}$$
 
-For even $n$, we know that:
+To then find the optimal cross-over point, we want to calculate the value of $n$ such that the time to perform conventional multiplication equals the time to perform Strassen multiplication with all subproblems using the conventional multiplication algorithm. For even values of $n$, we have that:
 
 $$\begin{gathered}
 T_C(n)=7\cdot T_C\left(\frac{n}{2}\right)+\frac{9n^2}{2}\\
@@ -40,7 +42,20 @@ n^3-15n^2=0\\
 n=0,15
 \end{gathered}$$
 
-Thus, for even dimensions, we have that $n_0=15$.
+We do not care about the degenerate case where $n=0$, so for even dimensions, we get that $n_0=15$.
+
+For odd values of $n$, we first pad the matrix to be $(n+1)\times(n+1)$ in size. As such, we know that:
+
+$$\begin{gathered}
+T_C(n)=7\cdot T_C\left(\frac{n+1}{2}\right)+\frac{9(n+1)^2}{2}\\
+n^2(2n-1)=7\left(\frac{n+1}{2}\right)^2\left(2\left(\frac{n+1}{2}\right)-1\right)+\frac{9(n+1)^2}{2}\\
+n^2(2n-1)=\frac{7n(n+1)^2}{4}+\frac{9(n+1)^2}{2}\\
+4n^2(2n-1)=7n(n+1)^2+18(n+1)^2\\
+n^3-36n^2-43n-18=0\\
+n\approx 37.170
+\end{gathered}$$
+
+Thus, for odd dimensions, we get that $n_0=37$.
 
 ## 3. Experimental Cross-Over Point
 
