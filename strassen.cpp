@@ -6,6 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <limits>
 
 #define N0 65
 #define NUM_TRIALS 10
@@ -44,7 +45,7 @@ private:
     /**
      * Finds the `q`-th quarter.
      *
-     * @param q Which quarter should be returned.
+     * @param q The quarter to be returned.
      * @return Quarter `q` of matrix.
      */
     const Matrix quarter(const int &q) const
@@ -309,7 +310,7 @@ public:
 void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b, const int &dim)
 {
     // Keep track of `min_time` and `best_threshold`.
-    double min_time = INT_MAX;
+    double min_time = std::numeric_limits<double>::max();
     int best_threshold;
 
     // Calculate product `C` for various values of `threshold`.
