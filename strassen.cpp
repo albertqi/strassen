@@ -5,6 +5,7 @@
 #include <random>
 #include <chrono>
 #include <thread>
+#include <mutex>
 
 #define N0 65
 #define NUM_TRIALS 10
