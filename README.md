@@ -81,7 +81,7 @@ We can now graph the results to better visualize how the optimal experimental cr
 
 ![Optimal experimental cross-over point vs. n](./assets/cross-over.png)
 
-The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm. The number of operations for the conventional algorithm does not increase as much. Thus, the experimental cross-over point continually increases as $n$ goes from $128$ to $2048$.
+The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm. Meanwhile, the number of operations for the conventional algorithm does not increase as much. Thus, the experimental cross-over point continually increases as $n$ goes from $128$ to $2048$.
 
 Lastly, we also ran experiments on $0/1/2$ matrices but saw no difference in runtimes or cross-over points. All operations for $0/1/2$ matrices seem to take about the same amount of time as they do for $-1/0/1$ matrices.
 
