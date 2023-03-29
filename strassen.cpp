@@ -233,7 +233,6 @@ public:
 
         // Create new matrix `Z`.
         const Matrix Z(dim, new long[dim * dim]);
-        const bool should_trim = Q1.dim * 2 != dim;
 
         // Update entries of `Z`.
         for (int i = 0; i < (dim + 1) / 2; ++i)
@@ -241,18 +240,9 @@ public:
             for (int j = 0; j < (dim + 1) / 2; ++j)
             {
                 Z(i, j) = Q1(i, j);
-                if (!should_trim || j != (dim - 1) / 2)
-                {
-                    Z(i, j + (dim + 1) / 2) = Q2(i, j);
-                }
-                if (!should_trim || i != (dim - 1) / 2)
-                {
-                    Z(i + (dim + 1) / 2, j) = Q3(i, j);
-                }
-                if (!should_trim || (i != (dim - 1) / 2) && j != (dim - 1) / 2)
-                {
-                    Z(i + (dim + 1) / 2, j + (dim + 1) / 2) = Q4(i, j);
-                }
+                Z(i, j + (dim + 1) / 2) = Q2(i, j);
+                Z(i + (dim + 1) / 2, j) = Q3(i, j);
+                Z(i + (dim + 1) / 2, j + (dim + 1) / 2) = Q4(i, j);
             }
         }
 
