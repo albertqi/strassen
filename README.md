@@ -59,29 +59,29 @@ Thus, for odd dimensions, we get that $n_0=37$.
 
 ## 3. Experimental Cross-Over Point
 
-For each $n=32,64,128,256,512,1024,2048$, we determine the optimal experimental cross-over point $n_0$ by finding the value of $n_0$ from $10$ to $n$ that minimizes the average runtime of Strassen multiplication on two random $-1/0/1$ matrices of size $n\times n$; we can safely start at $n_0=10$ because it is smaller than the optimal analytical cross-over point. The following table shows the optimal experimental cross-over point for various values of $n$ with runtimes averaged across $10$ trials. 
+For each $n=128,256,512,1024,2048$, we determine the optimal experimental cross-over point $n_0$ by finding the value of $n_0$ from $10$ to $n$ that minimizes the average runtime of Strassen multiplication on two random $-1/0/1$ matrices of size $n\times n$; we can safely start at $n_0=10$ because it is smaller than the optimal analytical cross-over point. The following table shows the optimal experimental cross-over point for various values of $n$ with runtimes averaged across $10$ trials. 
 
 | $n$    | Optimal Cross-Over Point |
 | :-----:| :----------------------: |
-| $32$   | $32$                     |
-| $64$   | $33$                     |
 | $128$  | $36$                     |
 | $256$  | $47$                     |
 | $512$  | $73$                     |
 | $1024$ | $83$                     |
 | $2048$ | $87$                     |
 
-Averaging the experimental cross-over points, we get an optimal cross-over point of $n_0\approx 56$. Note that this cross-over point is significantly higher than the analytical cross-over point (i.e., the higher analytical cross-over point of $37$). This is likely due to two main reasons:
+Note that we do not include the results for extremely small values of $n$, such as $16$ or $32$. These dimensions are so small that the optimal cross-over point is simply the highest value possible (i.e., the optimal cross-over point equals $n$). This only tells us that the optimal cross-over point is at least $n$, which is not very useful. For example, the true optimal cross-over point could be $32$ or $124$, and in both cases, the outputted optimal cross-over point for $n=16$ and $n=32$ would just be $16$ and $32$, respectively.
+
+Now, averaging our experimental cross-over points, we get an optimal cross-over point of $n_0\approx 65$. This cross-over point is significantly higher than the analytical cross-over point (i.e., the higher analytical cross-over point of $37$), which is likely due to two main reasons:
 
 1. Our analytical cross-over point does not account for memory allocation during Strassen's algorithm. During Strassen multiplication, we need to create new matrices, whereupon we sometimes use the `new` keyword. Dynamically allocating memory takes a nontrivial amount of time, meaning Strassen's algorithm will take longer than we expect. This increases the experimental cross-over point.
 
-2. Our calculation of the analytical cross-over point assumes that all arithmetic operations take $O(1)$ time. In practice, the runtime of arithmetic operations depends on the size of the numbers. Multiplying two large numbers, for instance, will not take a constant amount of time. This ultimately increases the runtime of Strassen's algorithm, thereby also increasing the experimental cross-over point.
+2. Our calculation of the analytical cross-over point assumes that all arithmetic operations take $O(1)$ time. In practice, the runtime of arithmetic operations depends on the size of the inputs. Multiplying two large numbers, for instance, will not take a constant amount of time. This ultimately increases the runtime of Strassen's algorithm, thereby also increasing the experimental cross-over point.
 
-Now, we can also graph the results to better visualize how the optimal experimental cross-over point changes with $n$.
+We can now graph the results to better visualize how the optimal experimental cross-over point changes with $n$.
 
 ![Optimal experimental cross-over point vs. n](./assets/cross-over.png)
 
-The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm as compared to the conventional algorithm. Thus, the experimental cross-over point continually increases as $n$ goes from $32$ to $2048$.
+The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm. The number of operations for the conventional algorithm does not increase as much. Thus, the experimental cross-over point continually increases as $n$ goes from $128$ to $2048$.
 
 Lastly, we also ran experiments on $0/1/2$ matrices but saw no difference in runtimes or cross-over points. All operations for $0/1/2$ matrices seem to take about the same amount of time as they do for $-1/0/1$ matrices.
 
@@ -105,4 +105,14 @@ As we can see by the graph, the experimental number of triangles aligns very clo
 
 ## 5. Discussion of Experiments
 
+We implemented many optimizations that help reduce the runtimes of both conventional and Strassen multiplication.
 
+First, we choose to have every `Matrix` object maintain a pointer to an array. Because the pointer itself does not take up much space, we can have many `Matrix` objects access the same array. During Strassen multiplication, this allows us to split a matrix into quarters without requiring us to duplicate the entire matrix array. Ultimately, this implementation results in a much smaller time and space complexity.
+
+When we perform Strassen multiplication on matrices with odd dimensions, we need to pad an extra row and column of zeros. To reduce the runtime, however, we do not literally update the array in memory to include a bunch of zeros. Instead, this is all handled by the function call operator `()`. We override this operator to normally return a reference to an element at a certain row and column in a matrix, but if the row or column is invalid, then the function call operator will return a reference to `zero` instead. This allows us to simulate a padded matrix without having to literally add a row and column of zeros.
+
+For conventional multiplication, we traverse the array in a manner that updates the matrix array in sequential order. We know that sequential access is faster than random access, so traversing the array in sequential order does help improve the runtime of the conventional algorithm.
+
+Note that we also pass objects by reference whenever possible in order to minimize the amount of unnecessary copies.
+
+Lastly, note that we generate random values through the `<random>` header because we trust this more than the C standard library function `rand`. Additionally, our generator is `thread_local` and seeded via `random_device`, ensuring that each trial has independent randomness.
