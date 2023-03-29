@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 
-#define N0 68
+#define N0 65
 #define NUM_TRIALS 10
 
 long zero = 0;
@@ -303,15 +303,16 @@ public:
  * @param B Second matrix.
  * @param a Pointer to array of `A`.
  * @param b Pointer to array of `B`.
+ * @param dim Dimension of `A` and `B`.
  */
-void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b)
+void find_best_threshold(const Matrix &A, const Matrix &B, long *a, long *b, const int &dim)
 {
     // Keep track of `min_time` and `best_threshold`.
     double min_time = INT_MAX;
     int best_threshold;
 
     // Calculate product `C` for various values of `threshold`.
-    for (int threshold = 10; threshold <= 1000; threshold += 10)
+    for (int threshold = 10; threshold <= dim; ++threshold)
     {
         // Initialize `total_runtime`.
         double total_runtime = 0;
@@ -464,7 +465,7 @@ int main(int argc, char *argv[])
     // Find best threshold for Strassen multiplication.
     if (flag == 1)
     {
-        find_best_threshold(A, B, a, b);
+        find_best_threshold(A, B, a, b, dim);
         return 0;
     }
 
