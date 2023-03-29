@@ -59,11 +59,35 @@ Thus, for odd dimensions, we get that $n_0=37$.
 
 ## 3. Experimental Cross-Over Point
 
+For each $n=32,64,128,256,512,1024,2048$, we determine the optimal experimental cross-over point $n_0$ by finding the value of $n_0$ from $10$ to $n$ that minimizes the average runtime of Strassen multiplication on two random $-1/0/1$ matrices of size $n\times n$; we can safely start at $n_0=10$ because it is smaller than the optimal analytical cross-over point. The following table shows the optimal experimental cross-over point for various values of $n$ with runtimes averaged across $10$ trials. 
 
+| $n$    | Optimal Cross-Over Point |
+| :-----:| :----------------------: |
+| $32$   | $32$                     |
+| $64$   | $33$                     |
+| $128$  | $36$                     |
+| $256$  | $47$                     |
+| $512$  | $73$                     |
+| $1024$ | $83$                     |
+| $2048$ | $87$                     |
+
+Averaging the experimental cross-over points, we get an optimal cross-over point of $n_0\approx 56$. Note that this cross-over point is significantly higher than the analytical cross-over point (i.e., the higher analytical cross-over point of $37$). This is likely due to two main reasons:
+
+1. Our analytical cross-over point does not account for memory allocation during Strassen's algorithm. During Strassen multiplication, we need to create new matrices, whereupon we sometimes use the `new` keyword. Dynamically allocating memory takes a nontrivial amount of time, meaning Strassen's algorithm will take longer than we expect. This increases the experimental cross-over point.
+
+2. Our calculation of the analytical cross-over point assumes that all arithmetic operations take $O(1)$ time. In practice, the runtime of arithmetic operations depends on the size of the numbers. Multiplying two large numbers, for instance, will not take a constant amount of time. This ultimately increases the runtime of Strassen's algorithm, thereby also increasing the experimental cross-over point.
+
+Now, we can also graph the results to better visualize how the optimal experimental cross-over point changes with $n$.
+
+![Optimal experimental cross-over point vs. n](./assets/cross-over.png)
+
+The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm as compared to the conventional algorithm. Thus, the experimental cross-over point continually increases as $n$ goes from $32$ to $2048$.
+
+Lastly, we also ran experiments on $0/1/2$ matrices but saw no difference in runtimes or cross-over points. All operations for $0/1/2$ matrices seem to take about the same amount of time as they do for $-1/0/1$ matrices.
 
 ## 4. Triangles in Random Graphs
 
-For each probability $p$, we create $10$ random graphs and calculate the average number of triangles. The following table compares these averages to the expected number of triangles, which is $\binom{1024}{3}p^3$.
+For each probability $p=0.01,0.02,0.03,0.04,0.05$, we create $10$ random graphs and calculate the average number of triangles. The following table compares these averages to the expected number of triangles, which is $\binom{1024}{3}p^3$.
 
 | $p$    | Experimental Number of Triangles | Expected Number of Triangles |
 | :-----:| :------------------------------: | :--------------------------: |
@@ -77,7 +101,7 @@ We can then graph these results to better visualize how the experimental number 
 
 ![Experimental and expected number of triangles vs. p](./assets/triangles.png)
 
-As we can see by the graph, the experimental number of triangles aligns very closely with the expected number of triangles. Indeed, the experimental number only differs from the expected number of triangles by at most $1.46$ percent (with $p=0.01$).
+As we can see by the graph, the experimental number of triangles aligns very closely with the expected number of triangles. Indeed, the experimental number only differs from the expected number of triangles by at most $1.46$ percent (where $p=0.01$).
 
 ## 5. Discussion of Experiments
 
