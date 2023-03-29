@@ -167,9 +167,9 @@ public:
         // Update entries of `Z`.
         for (int i = 0; i < dim; ++i)
         {
-            for (int j = 0; j < dim; ++j)
+            for (int k = 0; k < dim; ++k)
             {
-                for (int k = 0; k < dim; ++k)
+                for (int j = 0; j < dim; ++j)
                 {
                     Z(i, j) += X(i, k) * Y(k, j);
                 }
