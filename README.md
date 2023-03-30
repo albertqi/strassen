@@ -11,7 +11,7 @@
 
 ## 1. Introduction
 
-In this write-up, we will determine the optimal cross-over point from Strassen multiplication to conventional multiplication. We will first find the analytical cross-over point and then compare that to our experimental cross-over point. Using this, we can also estimate the number of triangles in a random graph for various probabilities of including an edge. Finally, we will discuss our experiments in more depth, covering the optimizations of our algorithm and other intruiging details we discovered along the way.
+In this write-up, we will determine the optimal cross-over point from Strassen multiplication to conventional multiplication. We will first find the analytical cross-over point and then compare that to our experimental cross-over point. Using this, we can also estimate the number of triangles in a random graph for various probabilities of including an edge. Finally, we will discuss our experiments in more depth, covering the optimizations of our algorithm and other intriguing details we discovered along the way.
 
 ## 2. Analytical Cross-Over Point
 
@@ -115,10 +115,10 @@ Now, to improve the conventional algorithm, we traverse the matrix arrays in seq
 
 For Strassen's algorithm, we are able to improve the runtime through a few optimizations. First, the design of the `Matrix` object allows us to have every `Matrix` object maintain a pointer to its matrix array. Because the pointer itself does not take up much space, we can easily have many `Matrix` objects access the same array in memory. This allows us to partition a matrix into quarters without requiring us to duplicate the entire matrix array, which would drastically worsen both the time and space complexity. Instead, we can just create four `Matrix` objects that share the same pointer but have different row and column starting positions.
 
-Now, how do we handle Strassen multiplication on matices with odd dimensions? Instead of padding the multiplicands to be of size $2^k\times 2^k$, we choose to just pad one extra row and column of zeros. We utilize this padding method since padding the multiplicands to be the next greater power of $2$ in size requires a lot of time and memory.
+Now, how do we handle Strassen multiplication on matrices with odd dimensions? Instead of padding the multiplicands to be of size $2^k\times 2^k$, we choose to just pad one extra row and column of zeros. We utilize this padding method since padding the multiplicands to be the next greater power of $2$ in size requires a lot of time and memory.
 
 To further reduce the runtime as well, we do not literally update the matrix array in memory to include an extra row and column of zeros. Instead, this is handled by the function call operator `()`. We set this operator to normally return a reference to an element at a certain row and column in a matrix, but if the row or column is invalid, then the function call operator will return a reference to `zero` instead. This allows us to simulate a padded matrix without having to literally add a row and column of zeros.
 
-As a final minor optimization, we also pass objects by reference whenever possible. This reduces the amount of unnecessary copies and improves the runtimes for both the conventional and Strassen multiplication algorithms.
+As a final minor optimization, we also pass objects by reference whenever possible. This reduces the number of unnecessary copies and improves the runtimes for both the conventional and Strassen multiplication algorithms.
 
 Lastly, note that we generate random values through the `<random>` header because we trust this more than the C standard library function `rand`. Our generator is also `thread_local` and seeded via `random_device`, ensuring that each trial has independent randomness.
