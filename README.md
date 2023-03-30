@@ -11,7 +11,7 @@
 
 ## 1. Introduction
 
-In this write-up, we determine the optimal cross-over point from Strassen multiplication to conventional multiplication. We will first find the analytical cross-over point and then compare that to our experimental cross-over point. Using this, we can also estimate the number of triangles in a random graph for various probabilities of including an edge. Finally, we will discuss our experiments in more depth, covering the optimizations of our algorithm and other intruiging details we discovered along the way.
+In this write-up, we will determine the optimal cross-over point from Strassen multiplication to conventional multiplication. We will first find the analytical cross-over point and then compare that to our experimental cross-over point. Using this, we can also estimate the number of triangles in a random graph for various probabilities of including an edge. Finally, we will discuss our experiments in more depth, covering the optimizations of our algorithm and other intruiging details we discovered along the way.
 
 ## 2. Analytical Cross-Over Point
 
@@ -73,7 +73,7 @@ Note that we do not include the results for extremely small values of $n$, such 
 
 Now, averaging our experimental cross-over points, we get an optimal cross-over point of $n_0\approx 65$. This cross-over point is significantly higher than the analytical cross-over point (i.e., the higher analytical cross-over point of $37$), which is likely due to two main reasons:
 
-1. Our analytical cross-over point does not account for memory allocation during Strassen's algorithm. During Strassen multiplication, we need to create new matrices, whereupon we sometimes use the `new` keyword. Dynamically allocating memory takes a nontrivial amount of time, meaning Strassen's algorithm will take longer than we expect. This increases the experimental cross-over point.
+1. Our analytical cross-over point does not account for memory allocation during Strassen's algorithm. During Strassen multiplication, we need to create new matrices, whereupon we may need to use the `new` keyword. Dynamically allocating memory takes a nontrivial amount of time, meaning Strassen's algorithm will take longer than we expect. This increases the experimental cross-over point.
 
 2. Our calculation of the analytical cross-over point assumes that all arithmetic operations take $O(1)$ time. In practice, the runtime of arithmetic operations depends on the size of the inputs. Multiplying two large numbers, for instance, will not take a constant amount of time. This ultimately increases the runtime of Strassen's algorithm, thereby also increasing the experimental cross-over point.
 
@@ -82,6 +82,8 @@ We can now graph the results to better visualize how the optimal experimental cr
 ![Optimal experimental cross-over point vs. n](./assets/cross-over.png)
 
 The experimental cross-over point seems to increase as $n$ increases; this makes sense. As $n$ increases, we need more and more memory allocations and arithmetic operations for Strassen's algorithm. Meanwhile, the number of operations for the conventional algorithm does not increase as much. Thus, the experimental cross-over point continually increases as $n$ goes from $128$ to $2048$.
+
+This then raises an interesting issue regarding the practicality of a cross-over point. A cross-over point is certainly necessary for Strassen's algorithm to run reasonably fast; running Strassen's algorithm all the way down to $1\times 1$ matrices is absurd. However, because the experimental cross-over point differs based on $n$, it may be hard to define as a constant. This means that, in practice, the optimal cross-over point might be better represented as a function of $n$.
 
 Lastly, we also ran experiments on $0/1/2$ matrices but saw no difference in runtimes or cross-over points. All operations for $0/1/2$ matrices seem to take about the same amount of time as they do for $-1/0/1$ matrices.
 
@@ -105,14 +107,18 @@ As we can see by the graph, the experimental number of triangles aligns very clo
 
 ## 5. Discussion of Experiments
 
-We implemented many optimizations that help reduce the runtimes of both conventional and Strassen multiplication.
+In order to reduce the runtimes of both the conventional matrix multiplication algorithm and Strassen's multiplication algorithm, we make several design choices that each optimize the algorithms in different ways.
 
-First, we choose to have every `Matrix` object maintain a pointer to an array. Because the pointer itself does not take up much space, we can have many `Matrix` objects access the same array. During Strassen multiplication, this allows us to split a matrix into quarters without requiring us to duplicate the entire matrix array. Ultimately, this implementation results in a much smaller time and space complexity.
+Let us first discuss the `Matrix` object. We decide to represent the elements of each matrix fundamentally as a single array (hereinafter referred to as "matrix array") as opposed to an array of arrays since keeping track of one pointer is much simpler. This means that we can access the element at row `i` and column `j` via `arr[i * dim + j]` instead of `arr[i][j]`. Note that we use arrays instead of vectors since they use less memory and we never need to change the size of the arrays that we create.
 
-When we perform Strassen multiplication on matrices with odd dimensions, we need to pad an extra row and column of zeros. To reduce the runtime, however, we do not literally update the array in memory to include a bunch of zeros. Instead, this is all handled by the function call operator `()`. We override this operator to normally return a reference to an element at a certain row and column in a matrix, but if the row or column is invalid, then the function call operator will return a reference to `zero` instead. This allows us to simulate a padded matrix without having to literally add a row and column of zeros.
+Now, to improve the conventional algorithm, we traverse the matrix arrays in sequential order whenever possible by utilizing a loop order of `ikj` instead of `ijk`. We know that sequential access is faster than random access, so traversing matrix arrays in sequential order ultimately helps improve the runtime of the conventional algorithm.
 
-For conventional multiplication, we traverse the array in a manner that updates the matrix array in sequential order. We know that sequential access is faster than random access, so traversing the array in sequential order does help improve the runtime of the conventional algorithm.
+For Strassen's algorithm, we are able to improve the runtime through a few optimizations. First, the design of the `Matrix` object allows us to have every `Matrix` object maintain a pointer to its matrix array. Because the pointer itself does not take up much space, we can easily have many `Matrix` objects access the same array in memory. This allows us to partition a matrix into quarters without requiring us to duplicate the entire matrix array, which would drastically worsen both the time and space complexity. Instead, we can just create four `Matrix` objects that share the same pointer but have different row and column starting positions.
 
-Note that we also pass objects by reference whenever possible in order to minimize the amount of unnecessary copies.
+Now, how do we handle Strassen multiplication on matices with odd dimensions? Instead of padding the multiplicands to be of size $2^k\times 2^k$, we choose to just pad one extra row and column of zeros. We utilize this padding method since padding the multiplicands to be the next greater power of $2$ in size requires a lot of time and memory.
 
-Lastly, note that we generate random values through the `<random>` header because we trust this more than the C standard library function `rand`. Additionally, our generator is `thread_local` and seeded via `random_device`, ensuring that each trial has independent randomness.
+To further reduce the runtime as well, we do not literally update the matrix array in memory to include an extra row and column of zeros. Instead, this is handled by the function call operator `()`. We set this operator to normally return a reference to an element at a certain row and column in a matrix, but if the row or column is invalid, then the function call operator will return a reference to `zero` instead. This allows us to simulate a padded matrix without having to literally add a row and column of zeros.
+
+As a final minor optimization, we also pass objects by reference whenever possible. This reduces the amount of unnecessary copies and improves the runtimes for both the conventional and Strassen multiplication algorithms.
+
+Lastly, note that we generate random values through the `<random>` header because we trust this more than the C standard library function `rand`. Our generator is also `thread_local` and seeded via `random_device`, ensuring that each trial has independent randomness.
